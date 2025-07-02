@@ -3,17 +3,27 @@ class SkyInteractiveApp {
     this.skyEngine = null;
     this.isLoading = true;
     this.skyData = null;
+    this.isIPhone = /iPhone|iPod/.test(navigator.userAgent);
+    this.touchHintsShown = false;
 
     this.initializeApp();
   }
 
   async initializeApp() {
     try {
+      // Show loading with iPhone-optimized messaging
+      this.showLoading('Inizializzazione del cielo stellato...');
+
       // Initialize sky engine
       this.skyEngine = new SkyEngine('skyCanvas');
 
       // Setup UI event listeners
       this.setupUIEventListeners();
+
+      // iPhone specific optimizations
+      if (this.isIPhone) {
+        this.setupiPhoneOptimizations();
+      }
 
       // Load sky data
       await this.loadSkyData();
@@ -21,83 +31,263 @@ class SkyInteractiveApp {
       // Initialize view
       this.initializeView();
 
+      // Show touch hints on iPhone
+      if (this.isIPhone && !this.touchHintsShown) {
+        this.showTouchHints();
+      }
+
       // Hide loading indicator
       this.hideLoading();
 
-      console.log('App Cielo Interattivo inizializzata con successo');
+      console.log('App Cielo Interattivo inizializzata con successo per iPhone');
     } catch (error) {
       console.error("Errore nell'inizializzazione dell'app:", error);
-      this.showError('Errore nel caricamento dei dati del cielo. Ricarica la pagina.');
+      this.showError('Errore nel caricamento dei dati del cielo. Controlla la connessione e ricarica la pagina.');
+    }
+  }
+
+  setupiPhoneOptimizations() {
+    // Prevent iOS Safari from bouncing
+    document.body.addEventListener(
+      'touchmove',
+      (e) => {
+        e.preventDefault();
+      },
+      { passive: false }
+    );
+
+    // Handle iOS viewport changes
+    const handleViewportChange = () => {
+      // Update CSS custom property for real viewport height
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+
+      if (this.skyEngine) {
+        setTimeout(() => {
+          this.skyEngine.resizeCanvas();
+          this.skyEngine.render();
+        }, 150);
+      }
+    };
+
+    window.addEventListener('resize', handleViewportChange);
+    window.addEventListener('orientationchange', () => {
+      setTimeout(handleViewportChange, 300);
+    });
+
+    // Initial call
+    handleViewportChange();
+
+    // Add haptic feedback support
+    this.setupHapticFeedback();
+
+    // Optimize for iPhone performance
+    this.optimizePerformance();
+  }
+
+  setupHapticFeedback() {
+    // Enhanced haptic patterns for different interactions
+    this.hapticPatterns = {
+      light: [1],
+      medium: [3],
+      heavy: [10],
+      double: [3, 50, 3],
+      success: [10, 50, 10, 50, 10],
+      error: [100, 50, 100],
+    };
+  }
+
+  triggerHaptic(pattern = 'light') {
+    if (!this.isIPhone || !navigator.vibrate) return;
+
+    const haptic = this.hapticPatterns[pattern] || this.hapticPatterns.light;
+    navigator.vibrate(haptic);
+  }
+
+  optimizePerformance() {
+    // Reduce animations when battery is low
+    if ('getBattery' in navigator) {
+      navigator.getBattery().then((battery) => {
+        if (battery.level < 0.2) {
+          document.body.classList.add('low-battery');
+        }
+      });
+    }
+
+    // Pause animations when app is not visible
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        this.skyEngine?.stopAnimation();
+      } else {
+        this.skyEngine?.startAnimation();
+      }
+    });
+  }
+
+  showTouchHints() {
+    const hints = document.querySelector('.touch-indicators');
+    if (hints) {
+      hints.style.display = 'flex';
+      this.touchHintsShown = true;
+
+      // Store that hints were shown
+      localStorage.setItem('touchHintsShown', 'true');
     }
   }
 
   setupUIEventListeners() {
-    // Constellation toggle
+    // Enhanced constellation toggle with haptic feedback
     document.getElementById('toggleConstellations').addEventListener('click', () => {
       this.toggleConstellations();
+      this.triggerHaptic('medium');
     });
 
-    // Info panel toggle
+    // Enhanced info panel toggle
     document.getElementById('toggleInfo').addEventListener('click', () => {
       this.toggleInfoPanel();
+      this.triggerHaptic('light');
     });
 
     // Close info panel
     document.getElementById('closeInfo').addEventListener('click', () => {
       this.closeInfoPanel();
+      this.triggerHaptic('light');
     });
 
-    // Bottom navigation
+    // Enhanced bottom navigation with haptic feedback
     document.querySelectorAll('.nav-btn').forEach((btn) => {
       btn.addEventListener('click', (e) => {
-        this.handleNavigation(e.target.closest('.nav-btn').dataset.view);
+        const view = e.target.closest('.nav-btn').dataset.view;
+        this.handleNavigation(view);
+        this.triggerHaptic('light');
       });
     });
 
-    // Handle orientation changes on mobile
-    window.addEventListener('orientationchange', () => {
-      setTimeout(() => {
+    // iPhone orientation handling
+    if (this.isIPhone) {
+      window.addEventListener('orientationchange', () => {
+        this.handleOrientationChange();
+      });
+    }
+
+    // Close tooltip when tapping elsewhere (iPhone optimized)
+    document.addEventListener(
+      'touchstart',
+      (e) => {
+        if (!e.target.closest('#objectTooltip') && !e.target.closest('#skyCanvas')) {
+          document.getElementById('objectTooltip').classList.remove('show');
+        }
+      },
+      { passive: true }
+    );
+
+    // Prevent context menu on long press (iPhone)
+    if (this.isIPhone) {
+      document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+      });
+    }
+  }
+
+  handleOrientationChange() {
+    // Handle iPhone orientation changes smoothly
+    const loading = document.getElementById('loading');
+    loading.style.display = 'block';
+    loading.querySelector('p').textContent = "Adattamento all'orientamento...";
+
+    setTimeout(() => {
+      if (this.skyEngine) {
         this.skyEngine.resizeCanvas();
         this.skyEngine.render();
-      }, 100);
-    });
-
-    // Close tooltip when clicking elsewhere
-    document.addEventListener('click', (e) => {
-      if (!e.target.closest('#objectTooltip')) {
-        document.getElementById('objectTooltip').classList.remove('show');
       }
-    });
+      loading.style.display = 'none';
+    }, 500);
   }
 
   async loadSkyData() {
     try {
+      this.showLoadingProgress('Caricamento dati stellari...', 20);
+
       const response = await fetch('/api/sky-data');
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
+      this.showLoadingProgress('Elaborazione coordinate...', 60);
+
       this.skyData = await response.json();
       this.skyEngine.setSkyData(this.skyData);
+
+      this.showLoadingProgress('Configurazione costellazioni...', 80);
 
       // Update moon phase display
       this.updateMoonDisplay();
 
+      this.showLoadingProgress('Finalizzazione...', 100);
+
       console.log('Sky data loaded:', this.skyData);
+
+      // Success haptic feedback
+      this.triggerHaptic('success');
     } catch (error) {
       console.error('Error loading sky data:', error);
+      this.triggerHaptic('error');
       throw error;
     }
   }
 
+  showLoading(message) {
+    const loading = document.getElementById('loading');
+    const loadingText = loading.querySelector('p');
+    loadingText.textContent = message;
+    loading.style.display = 'block';
+  }
+
+  showLoadingProgress(message, progress) {
+    const loading = document.getElementById('loading');
+    const loadingText = loading.querySelector('p');
+
+    // Create or update progress bar
+    let progressBar = loading.querySelector('.progress-bar');
+    if (!progressBar) {
+      progressBar = document.createElement('div');
+      progressBar.className = 'progress-bar';
+      progressBar.innerHTML = '<div class="progress-fill"></div>';
+      loading.appendChild(progressBar);
+    }
+
+    const progressFill = progressBar.querySelector('.progress-fill');
+    progressFill.style.width = `${progress}%`;
+    loadingText.textContent = message;
+  }
+
   initializeView() {
-    // Set initial view to show Leo and Sagittarius prominently
-    // Leo is around RA 152°, Dec 12°
-    // Sagittarius is around RA 276°, Dec -30°
-    // Position view to show both if possible, or Leo by default
-    this.skyEngine.viewSettings.centerRA = 180;
-    this.skyEngine.viewSettings.centerDec = 15;
-    this.skyEngine.viewSettings.zoom = 1.2;
+    // iPhone-optimized initial view
+    if (this.isIPhone) {
+      // Adjust for iPhone screen ratios
+      const isLandscape = window.innerWidth > window.innerHeight;
+
+      if (isLandscape) {
+        this.skyEngine.viewSettings.centerRA = 200;
+        this.skyEngine.viewSettings.centerDec = 20;
+        this.skyEngine.viewSettings.zoom = 1.0;
+      } else {
+        // Portrait - better view of Leo and Sagittarius
+        this.skyEngine.viewSettings.centerRA = 180;
+        this.skyEngine.viewSettings.centerDec = 15;
+        this.skyEngine.viewSettings.zoom = 1.2;
+      }
+    } else {
+      // Default view
+      this.skyEngine.viewSettings.centerRA = 180;
+      this.skyEngine.viewSettings.centerDec = 15;
+      this.skyEngine.viewSettings.zoom = 1.2;
+    }
+
+    // Set target view to match
+    this.skyEngine.targetView.centerRA = this.skyEngine.viewSettings.centerRA;
+    this.skyEngine.targetView.centerDec = this.skyEngine.viewSettings.centerDec;
+    this.skyEngine.targetView.zoom = this.skyEngine.viewSettings.zoom;
 
     // Start with constellations shown
     this.skyEngine.viewSettings.showConstellations = true;
@@ -142,36 +332,71 @@ class SkyInteractiveApp {
     const btn = document.getElementById('toggleConstellations');
     btn.classList.toggle('active');
 
-    // Provide haptic feedback on mobile
-    if (navigator.vibrate) {
-      navigator.vibrate(50);
+    // Enhanced visual feedback for iPhone
+    if (this.isIPhone) {
+      btn.style.transform = 'scale(0.95)';
+      setTimeout(() => {
+        btn.style.transform = '';
+      }, 100);
     }
   }
 
   toggleInfoPanel() {
     const panel = document.getElementById('infoPanel');
+    const isOpening = !panel.classList.contains('open');
+
     panel.classList.toggle('open');
 
-    // Provide haptic feedback on mobile
-    if (navigator.vibrate) {
-      navigator.vibrate(50);
+    // iPhone specific handling
+    if (this.isIPhone) {
+      if (isOpening) {
+        // Pause sky animation to save battery when panel is open
+        this.skyEngine?.stopAnimation();
+
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+      } else {
+        // Resume animation
+        this.skyEngine?.startAnimation();
+
+        // Restore body scroll
+        document.body.style.overflow = '';
+      }
     }
   }
 
   closeInfoPanel() {
-    document.getElementById('infoPanel').classList.remove('open');
+    const panel = document.getElementById('infoPanel');
+    panel.classList.remove('open');
+
+    if (this.isIPhone) {
+      // Resume animation and restore scroll
+      this.skyEngine?.startAnimation();
+      document.body.style.overflow = '';
+    }
   }
 
   handleNavigation(view) {
-    // Update active navigation
+    // Update active navigation with enhanced feedback
     document.querySelectorAll('.nav-btn').forEach((btn) => {
       btn.classList.remove('active');
     });
-    document.querySelector(`[data-view="${view}"]`).classList.add('active');
+
+    const activeBtn = document.querySelector(`[data-view="${view}"]`);
+    activeBtn.classList.add('active');
+
+    // iPhone-specific visual feedback
+    if (this.isIPhone) {
+      activeBtn.style.transform = 'scale(0.9)';
+      setTimeout(() => {
+        activeBtn.style.transform = '';
+      }, 150);
+    }
 
     switch (view) {
       case 'sky':
         // Already on sky view
+        this.focusOnSky();
         break;
       case 'search':
         this.showSearchDialog();
@@ -180,231 +405,304 @@ class SkyInteractiveApp {
         this.showTimeDialog();
         break;
     }
+  }
 
-    // Provide haptic feedback on mobile
-    if (navigator.vibrate) {
-      navigator.vibrate(50);
-    }
+  focusOnSky() {
+    // Close any open panels and focus on sky
+    this.closeInfoPanel();
+    document.getElementById('objectTooltip').classList.remove('show');
+
+    // Flash constellation highlights briefly
+    this.flashConstellations();
   }
 
   showSearchDialog() {
-    // Create and show search dialog
+    // Enhanced search dialog for iPhone
     const dialog = document.createElement('div');
     dialog.className = 'search-dialog';
     dialog.innerHTML = `
-            <div class="dialog-content">
-                <h3>Cerca Oggetti Celesti</h3>
-                <div class="search-options">
-                    <button class="search-option" data-target="leo">Trova Leone</button>
-                    <button class="search-option" data-target="sagittarius">Trova Sagittario</button>
-                    <button class="search-option" data-target="moon">Trova Luna</button>
-                    <button class="search-option" data-target="bright-stars">Stelle Brillanti</button>
-                </div>
-                <button class="close-dialog">Chiudi</button>
+      <div class="dialog-content">
+        <div class="dialog-header">
+          <h3>Cerca Oggetti Celesti</h3>
+          <button class="close-dialog-btn">×</button>
+        </div>
+        <div class="search-options">
+          <button class="search-option primary" data-target="leo">
+            <span class="search-icon">🦁</span>
+            <div class="search-info">
+              <strong>Trova Leone</strong>
+              <span>Costellazione principale</span>
             </div>
-        `;
-
-    // Add styles
-    dialog.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 300;
-        `;
-
-    const content = dialog.querySelector('.dialog-content');
-    content.style.cssText = `
-            background: rgba(0, 0, 0, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            padding: 20px;
-            max-width: 300px;
-            width: 90%;
-            color: white;
-            text-align: center;
-        `;
-
-    // Style search options
-    dialog.querySelectorAll('.search-option').forEach((btn) => {
-      btn.style.cssText = `
-                display: block;
-                width: 100%;
-                padding: 12px;
-                margin: 8px 0;
-                background: rgba(100, 181, 246, 0.1);
-                border: 1px solid rgba(100, 181, 246, 0.3);
-                color: #64b5f6;
-                border-radius: 8px;
-                cursor: pointer;
-                transition: all 0.3s ease;
-            `;
-    });
-
-    // Add event listeners
-    dialog.addEventListener('click', (e) => {
-      if (e.target === dialog || e.target.classList.contains('close-dialog')) {
-        document.body.removeChild(dialog);
-      } else if (e.target.classList.contains('search-option')) {
-        this.searchFor(e.target.dataset.target);
-        document.body.removeChild(dialog);
-      }
-    });
+          </button>
+          <button class="search-option primary" data-target="sagittarius">
+            <span class="search-icon">🏹</span>
+            <div class="search-info">
+              <strong>Trova Sagittario</strong>
+              <span>Costellazione principale</span>
+            </div>
+          </button>
+          <button class="search-option" data-target="moon">
+            <span class="search-icon">🌙</span>
+            <div class="search-info">
+              <strong>Trova Luna</strong>
+              <span>Satellite naturale</span>
+            </div>
+          </button>
+          <button class="search-option" data-target="bright-stars">
+            <span class="search-icon">⭐</span>
+            <div class="search-info">
+              <strong>Stelle Brillanti</strong>
+              <span>Magnitudine &lt; 2</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    `;
 
     document.body.appendChild(dialog);
+
+    // Add iPhone-specific styling
+    if (this.isIPhone) {
+      dialog.style.paddingTop = 'env(safe-area-inset-top)';
+      dialog.style.paddingBottom = 'env(safe-area-inset-bottom)';
+    }
+
+    // Animate in
+    setTimeout(() => dialog.classList.add('show'), 10);
+
+    // Setup event listeners
+    dialog.querySelector('.close-dialog-btn').addEventListener('click', () => {
+      this.closeDialog(dialog);
+    });
+
+    dialog.querySelectorAll('.search-option').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const target = e.currentTarget.dataset.target;
+        this.searchFor(target);
+        this.closeDialog(dialog);
+        this.triggerHaptic('medium');
+      });
+    });
+
+    // Close on backdrop click
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) {
+        this.closeDialog(dialog);
+      }
+    });
+  }
+
+  closeDialog(dialog) {
+    dialog.classList.remove('show');
+    setTimeout(() => {
+      if (dialog.parentNode) {
+        document.body.removeChild(dialog);
+      }
+    }, 300);
   }
 
   searchFor(target) {
     switch (target) {
       case 'leo':
-        this.skyEngine.viewSettings.centerRA = 152;
-        this.skyEngine.viewSettings.centerDec = 15;
-        this.skyEngine.viewSettings.zoom = 2;
+        // Center on Leo constellation
+        this.skyEngine.targetView.centerRA = 165;
+        this.skyEngine.targetView.centerDec = 15;
+        this.skyEngine.targetView.zoom = 1.8;
+        this.showSearchSuccess('Leone trovato! Cerca le stelle dorate che formano la testa del leone.');
         break;
       case 'sagittarius':
-        this.skyEngine.viewSettings.centerRA = 276;
-        this.skyEngine.viewSettings.centerDec = -30;
-        this.skyEngine.viewSettings.zoom = 2;
+        // Center on Sagittarius constellation
+        this.skyEngine.targetView.centerRA = 280;
+        this.skyEngine.targetView.centerDec = -25;
+        this.skyEngine.targetView.zoom = 1.6;
+        this.showSearchSuccess('Sagittario trovato! Cerca le stelle rosse che formano la "teiera".');
         break;
       case 'moon':
-        if (this.skyData?.moon && this.skyData.moon.visible) {
-          this.skyEngine.viewSettings.centerRA = this.skyData.moon.ra;
-          this.skyEngine.viewSettings.centerDec = this.skyData.moon.dec;
-          this.skyEngine.viewSettings.zoom = 3;
+        if (this.skyData?.moon) {
+          this.skyEngine.targetView.centerRA = this.skyData.moon.ra;
+          this.skyEngine.targetView.centerDec = this.skyData.moon.dec;
+          this.skyEngine.targetView.zoom = 2.0;
+          this.showSearchSuccess('Luna trovata! Osserva la sua fase attuale.');
         }
         break;
       case 'bright-stars':
-        this.skyEngine.viewSettings.centerRA = 180;
-        this.skyEngine.viewSettings.centerDec = 40;
-        this.skyEngine.viewSettings.zoom = 0.8;
+        // Show overview of bright stars
+        this.skyEngine.targetView.centerRA = 180;
+        this.skyEngine.targetView.centerDec = 30;
+        this.skyEngine.targetView.zoom = 0.8;
+        this.showSearchSuccess('Vista panoramica delle stelle più brillanti del cielo.');
         break;
     }
 
-    this.skyEngine.render();
-
-    // Flash the constellations if searching for them
-    if (target === 'leo' || target === 'sagittarius') {
+    // Flash target constellation
+    setTimeout(() => {
       this.flashConstellations();
-    }
+    }, 1000);
+  }
+
+  showSearchSuccess(message) {
+    const toast = document.createElement('div');
+    toast.className = 'success-toast';
+    toast.innerHTML = `
+      <div class="toast-content">
+        <span class="toast-icon">✨</span>
+        <span class="toast-message">${message}</span>
+      </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Show toast
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    // Auto hide
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => {
+        if (toast.parentNode) {
+          document.body.removeChild(toast);
+        }
+      }, 300);
+    }, 4000);
   }
 
   flashConstellations() {
-    const wasVisible = this.skyEngine.viewSettings.showConstellations;
+    // Temporarily show constellations if hidden
+    const wasHidden = !this.skyEngine.viewSettings.showConstellations;
 
-    // Ensure constellations are visible
-    this.skyEngine.viewSettings.showConstellations = true;
-    document.getElementById('toggleConstellations').classList.add('active');
+    if (wasHidden) {
+      this.skyEngine.viewSettings.showConstellations = true;
+    }
 
     // Flash effect
-    let flashCount = 0;
-    const flashInterval = setInterval(() => {
-      this.skyEngine.viewSettings.showConstellations = !this.skyEngine.viewSettings.showConstellations;
-      this.skyEngine.render();
-      flashCount++;
+    const canvas = document.getElementById('skyCanvas');
+    canvas.style.filter = 'brightness(1.3) contrast(1.2)';
 
-      if (flashCount >= 6) {
-        clearInterval(flashInterval);
-        this.skyEngine.viewSettings.showConstellations = true;
-        this.skyEngine.render();
+    setTimeout(() => {
+      canvas.style.filter = '';
+
+      // Hide constellations again if they were hidden
+      if (wasHidden) {
+        setTimeout(() => {
+          this.skyEngine.viewSettings.showConstellations = false;
+        }, 1000);
       }
-    }, 300);
+    }, 500);
   }
 
   showTimeDialog() {
-    // Create time dialog (placeholder for future time travel feature)
+    // Time dialog for iPhone
     const dialog = document.createElement('div');
     dialog.className = 'time-dialog';
     dialog.innerHTML = `
-            <div class="dialog-content">
-                <h3>Impostazioni Temporali</h3>
-                <p>Attuale: 1 Luglio 2024 - 22:00 UTC</p>
-                <div class="time-info">
-                    <p>Questa app mostra il cielo notturno come appariva il 1° luglio 2024 alle 22:00 UTC.</p>
-                    <p>Le costellazioni del Leone e del Sagittario sono evidenziate nelle loro posizioni estive.</p>
-                </div>
-                <button class="close-dialog">Chiudi</button>
+      <div class="dialog-content">
+        <div class="dialog-header">
+          <h3>Informazioni Temporali</h3>
+          <button class="close-dialog-btn">×</button>
+        </div>
+        <div class="time-info">
+          <div class="time-item">
+            <div class="time-icon">📅</div>
+            <div class="time-details">
+              <strong>Data Simulata</strong>
+              <span>1 Luglio 2024</span>
             </div>
-        `;
-
-    // Add styles
-    dialog.style.cssText = `
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 300;
-        `;
-
-    const content = dialog.querySelector('.dialog-content');
-    content.style.cssText = `
-            background: rgba(0, 0, 0, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 12px;
-            padding: 20px;
-            max-width: 350px;
-            width: 90%;
-            color: white;
-            text-align: center;
-        `;
-
-    content.querySelector('.time-info').style.cssText = `
-            background: rgba(100, 181, 246, 0.1);
-            border-radius: 8px;
-            padding: 15px;
-            margin: 15px 0;
-            font-size: 0.9rem;
-            line-height: 1.4;
-        `;
-
-    // Add event listener
-    dialog.addEventListener('click', (e) => {
-      if (e.target === dialog || e.target.classList.contains('close-dialog')) {
-        document.body.removeChild(dialog);
-      }
-    });
+          </div>
+          <div class="time-item">
+            <div class="time-icon">🕐</div>
+            <div class="time-details">
+              <strong>Orario</strong>
+              <span>22:00 UTC (Ora Legale Estiva)</span>
+            </div>
+          </div>
+          <div class="time-item">
+            <div class="time-icon">🌍</div>
+            <div class="time-details">
+              <strong>Posizione</strong>
+              <span>Londra, Regno Unito</span>
+            </div>
+          </div>
+          <div class="time-item">
+            <div class="time-icon">🌌</div>
+            <div class="time-details">
+              <strong>Condizioni</strong>
+              <span>Cielo sereno, visibilità ottimale</span>
+            </div>
+          </div>
+        </div>
+        <div class="time-note">
+          <p><strong>Nota:</strong> Questa è una simulazione del cielo notturno per la data e ora specificate. Le posizioni degli oggetti celesti corrispondono alla realtà astronomica del momento.</p>
+        </div>
+      </div>
+    `;
 
     document.body.appendChild(dialog);
+
+    // iPhone safe areas
+    if (this.isIPhone) {
+      dialog.style.paddingTop = 'env(safe-area-inset-top)';
+      dialog.style.paddingBottom = 'env(safe-area-inset-bottom)';
+    }
+
+    // Animate in
+    setTimeout(() => dialog.classList.add('show'), 10);
+
+    // Close button
+    dialog.querySelector('.close-dialog-btn').addEventListener('click', () => {
+      this.closeDialog(dialog);
+    });
+
+    // Close on backdrop
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) {
+        this.closeDialog(dialog);
+      }
+    });
   }
 
   hideLoading() {
     const loading = document.getElementById('loading');
-    loading.style.display = 'none';
-    this.isLoading = false;
+    loading.style.opacity = '0';
+
+    setTimeout(() => {
+      loading.style.display = 'none';
+      loading.style.opacity = '1'; // Reset for future use
+    }, 300);
   }
 
   showError(message) {
-    const loading = document.getElementById('loading');
-    loading.innerHTML = `
-            <div class="error-message">
-                <h3>⚠️ Error</h3>
-                <p>${message}</p>
-                <button onclick="location.reload()" style="
-                    background: #64b5f6;
-                    color: white;
-                    border: none;
-                    padding: 10px 20px;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    margin-top: 10px;
-                ">Retry</button>
-            </div>
-        `;
-    loading.style.display = 'block';
+    // iPhone-optimized error display
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.innerHTML = `
+      <div class="error-content">
+        <div class="error-icon">⚠️</div>
+        <div class="error-text">
+          <strong>Errore</strong>
+          <p>${message}</p>
+        </div>
+        <button class="error-retry" onclick="location.reload()">
+          Riprova
+        </button>
+      </div>
+    `;
+
+    document.body.appendChild(errorDiv);
+
+    // Show error
+    setTimeout(() => errorDiv.classList.add('show'), 10);
+
+    // Trigger error haptic
+    this.triggerHaptic('error');
+
+    // Hide loading
+    document.getElementById('loading').style.display = 'none';
   }
 
-  // Public methods for external access
+  // Utility methods for enhanced iPhone experience
   focusOnConstellation(name) {
-    this.searchFor(name.toLowerCase());
+    // Implementation would focus on specific constellation
+    console.log(`Focusing on constellation: ${name}`);
   }
 
   getCurrentView() {
@@ -412,46 +710,43 @@ class SkyInteractiveApp {
       centerRA: this.skyEngine.viewSettings.centerRA,
       centerDec: this.skyEngine.viewSettings.centerDec,
       zoom: this.skyEngine.viewSettings.zoom,
-      showConstellations: this.skyEngine.viewSettings.showConstellations,
     };
   }
 
   setView(centerRA, centerDec, zoom = 1) {
-    this.skyEngine.viewSettings.centerRA = centerRA;
-    this.skyEngine.viewSettings.centerDec = centerDec;
-    this.skyEngine.viewSettings.zoom = zoom;
-    this.skyEngine.render();
+    this.skyEngine.targetView.centerRA = centerRA;
+    this.skyEngine.targetView.centerDec = centerDec;
+    this.skyEngine.targetView.zoom = zoom;
   }
 }
 
-// Initialize app when DOM is loaded
+// Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
   window.skyApp = new SkyInteractiveApp();
 });
 
-// Add some useful global functions for debugging/development
-window.skyUtils = {
-  focusLeo: () => window.skyApp?.focusOnConstellation('leo'),
-  focusSagittarius: () => window.skyApp?.focusOnConstellation('sagittarius'),
-  getCurrentView: () => window.skyApp?.getCurrentView(),
-  setView: (ra, dec, zoom) => window.skyApp?.setView(ra, dec, zoom),
-};
-
-// Handle page visibility changes to pause/resume animations
+// Handle page visibility changes for iPhone battery optimization
 document.addEventListener('visibilitychange', () => {
-  if (window.skyApp?.skyEngine) {
+  if (window.skyApp) {
     if (document.hidden) {
-      window.skyApp.skyEngine.stopAnimation();
+      // Page is hidden - pause expensive operations
+      window.skyApp.skyEngine?.stopAnimation();
     } else {
-      window.skyApp.skyEngine.startAnimation();
+      // Page is visible - resume operations
+      window.skyApp.skyEngine?.startAnimation();
     }
   }
 });
 
-// Add service worker registration for offline support (if needed)
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    // Service worker could be added here for offline functionality
-    console.log('Service Worker support detected');
-  });
-}
+// Handle low memory situations on iPhone
+window.addEventListener('pagehide', () => {
+  if (window.skyApp) {
+    window.skyApp.skyEngine?.stopAnimation();
+  }
+});
+
+window.addEventListener('pageshow', () => {
+  if (window.skyApp) {
+    window.skyApp.skyEngine?.startAnimation();
+  }
+});

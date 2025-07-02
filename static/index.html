@@ -2,7 +2,20 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- iPhone optimized viewport -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.5, user-scalable=yes, viewport-fit=cover">
+    
+    <!-- iPhone full-screen app experience -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Cielo Interattivo">
+    
+    <!-- Prevent iPhone from trying to detect phone numbers -->
+    <meta name="format-detection" content="telephone=no">
+    
+    <!-- iPhone icons -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23000'/><text x='50' y='50' text-anchor='middle' dy='.3em' font-size='40' fill='%23FFD700'>🌌</text></svg>">
+    
     <title>Cielo Interattivo - Cielo Notturno 1 Luglio 2024</title>
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -33,6 +46,18 @@
             <div class="loading" id="loading">
                 <div class="spinner"></div>
                 <p>Caricamento del cielo notturno...</p>
+            </div>
+            
+            <!-- Touch indicators for iPhone -->
+            <div class="touch-indicators">
+                <div class="touch-hint" id="panHint">
+                    <span class="touch-icon">👆</span>
+                    <span class="touch-text">Tocca e trascina per esplorare</span>
+                </div>
+                <div class="touch-hint" id="zoomHint">
+                    <span class="touch-icon">🤏</span>
+                    <span class="touch-text">Pizzica per zoom</span>
+                </div>
             </div>
         </div>
 
