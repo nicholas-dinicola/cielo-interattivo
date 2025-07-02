@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: cielo-interattivo
+    runtime: docker
+    repo: https://github.com/nicholas-dinicola/cielo-interattivo.git
+    branch: main
+    rootDir: .
+    dockerfilePath: ./Dockerfile
+    region: oregon # Change to your preferred region (oregon, frankfurt, singapore, etc.)
+    plan: free # Use 'free' for free tier, 'starter' for paid
+    
+    # Environment variables
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: PYTHONUNBUFFERED
+        value: 1
+    
+    # Health check configuration
+    healthCheckPath: /api/stars
+    
+    # Auto-deploy on git push
+    autoDeploy: true
+    
+    # Build configuration
+    buildFilter:
+      paths:
+      - "**"
+      ignoredPaths:
+      - "*.md"
+      - ".git/**"
+      - ".gitignore"
+      - "docs/**" 
