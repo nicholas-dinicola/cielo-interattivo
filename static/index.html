@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cielo Interattivo - Cielo Notturno 1 Luglio 2024</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="title">Cielo Interattivo</h1>
+            <div class="date-display">1 Luglio 2024 - 22:00 UTC</div>
+            <div class="controls">
+                <button id="toggleConstellations" class="control-btn">
+                    <span class="icon">✦</span>
+                    Costellazioni
+                </button>
+                <button id="toggleInfo" class="control-btn">
+                    <span class="icon">ℹ</span>
+                    Info
+                </button>
+            </div>
+        </header>
+
+        <!-- Sky Canvas Container -->
+        <div class="sky-container">
+            <canvas id="skyCanvas" width="800" height="600"></canvas>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Caricamento del cielo notturno...</p>
+            </div>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="info-panel" id="infoPanel">
+            <div class="info-header">
+                <h3>Informazioni del Cielo</h3>
+                <button class="close-btn" id="closeInfo">×</button>
+            </div>
+            <div class="info-content">
+                <div class="highlighted-constellations">
+                    <h4>Costellazioni in Evidenza</h4>
+                    <div class="constellation-item leo">
+                        <span class="constellation-color"></span>
+                        <strong>Leone (Il Leone)</strong>
+                        <p>Cerca il caratteristico schema a "testa di leone" con la brillante Regolo al centro.</p>
+                    </div>
+                    <div class="constellation-item sagittarius">
+                        <span class="constellation-color"></span>
+                        <strong>Sagittario (L'Arciere)</strong>
+                        <p>L'asterismo della "teiera" è facilmente riconoscibile in questa costellazione.</p>
+                    </div>
+                </div>
+                <div class="moon-info" id="moonInfo">
+                    <h4>Fase Lunare</h4>
+                    <div class="moon-display">
+                        <div class="moon-icon" id="moonIcon"></div>
+                        <span id="moonPhase">Caricamento...</span>
+                    </div>
+                </div>
+                <div class="instructions">
+                    <h4>Come Usare</h4>
+                    <ul>
+                        <li>Tocca e trascina per esplorare il cielo</li>
+                        <li>Pizzica per ingrandire/rimpicciolire</li>
+                        <li>Tocca le stelle per informazioni</li>
+                        <li>Attiva le costellazioni per vedere i collegamenti</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Object Info Tooltip -->
+        <div class="object-tooltip" id="objectTooltip">
+            <div class="tooltip-content">
+                <h4 id="tooltipTitle"></h4>
+                <p id="tooltipDescription"></p>
+                <div class="tooltip-details" id="tooltipDetails"></div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-btn active" data-view="sky">
+                <span class="nav-icon">🌌</span>
+                <span class="nav-label">Cielo</span>
+            </button>
+            <button class="nav-btn" data-view="search">
+                <span class="nav-icon">🔍</span>
+                <span class="nav-label">Cerca</span>
+            </button>
+            <button class="nav-btn" data-view="time">
+                <span class="nav-icon">⏰</span>
+                <span class="nav-label">Tempo</span>
+            </button>
+        </nav>
+    </div>
+
+    <script src="/static/sky-engine.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html> 
