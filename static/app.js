@@ -688,17 +688,10 @@ class SkyInteractiveApp {
             </div>
           </div>
           <div class="time-item">
-            <div class="time-icon">🕐</div>
-            <div class="time-details">
-              <strong>Orario</strong>
-              <span>22:00 UTC (Ora Legale Estiva)</span>
-            </div>
-          </div>
-          <div class="time-item">
             <div class="time-icon">🌍</div>
             <div class="time-details">
               <strong>Posizione</strong>
-              <span>Londra, Regno Unito</span>
+              <span>Roma, Italia</span>
             </div>
           </div>
           <div class="time-item">

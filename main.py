@@ -40,9 +40,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 
 class AstronomicalCalculator:
     def __init__(self):
-        # Observer location (default: London)
+        # Observer location: Rome, Italy
         self.location = EarthLocation(
-            lat=51.5074*u.deg, lon=-0.1278*u.deg, height=0*u.m)
+            lat=41.9028*u.deg, lon=12.4964*u.deg, height=0*u.m)
         # Target date: July 1st, 2024
         self.observation_time = Time('2024-07-01 22:00:00', scale='utc')
 
