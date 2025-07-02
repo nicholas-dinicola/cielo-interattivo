@@ -533,13 +533,32 @@ class SkyEngine {
   }
 
   clearCanvas() {
-    this.ctx.fillStyle = 'transparent';
+    // Properly clear the canvas
+    this.ctx.clearRect(0, 0, this.canvas.width / this.pixelRatio, this.canvas.height / this.pixelRatio);
+
+    // Optional: Add a subtle background gradient
+    const gradient = this.ctx.createRadialGradient(
+      this.canvas.width / (2 * this.pixelRatio),
+      this.canvas.height / (2 * this.pixelRatio),
+      0,
+      this.canvas.width / (2 * this.pixelRatio),
+      this.canvas.height / (2 * this.pixelRatio),
+      Math.max(this.canvas.width, this.canvas.height) / (2 * this.pixelRatio)
+    );
+    gradient.addColorStop(0, 'rgba(26, 26, 46, 0.1)');
+    gradient.addColorStop(1, 'rgba(12, 12, 30, 0.2)');
+
+    this.ctx.fillStyle = gradient;
     this.ctx.fillRect(0, 0, this.canvas.width / this.pixelRatio, this.canvas.height / this.pixelRatio);
   }
 
   // Performance optimized drawing methods
   drawStars() {
     if (!this.skyData.stars) return;
+
+    // Reset canvas state at the beginning
+    this.ctx.shadowBlur = 0;
+    this.ctx.globalAlpha = 1;
 
     this.skyData.stars.forEach((star, index) => {
       const pos = this.raDecToXY(star.ra, star.dec);
@@ -551,17 +570,18 @@ class SkyEngine {
       // Star color based on magnitude
       const color = this.getStarColor(star.magnitude);
 
+      // Reset shadow state for each star
+      this.ctx.shadowBlur = 0;
+      this.ctx.shadowColor = 'transparent';
+
       // Highlight special constellations
-      let isHighlighted = false;
       if (star.constellation) {
         if (star.constellation.toLowerCase().includes('leo') || star.constellation.toLowerCase().includes('leone')) {
           this.ctx.shadowColor = '#ffd700';
-          this.ctx.shadowBlur = size * 2;
-          isHighlighted = true;
+          this.ctx.shadowBlur = size * 1.5;
         } else if (star.constellation.toLowerCase().includes('sagitt')) {
           this.ctx.shadowColor = '#ff6b6b';
-          this.ctx.shadowBlur = size * 2;
-          isHighlighted = true;
+          this.ctx.shadowBlur = size * 1.5;
         }
       }
 
@@ -569,10 +589,6 @@ class SkyEngine {
       this.ctx.beginPath();
       this.ctx.arc(pos.x, pos.y, size, 0, 2 * Math.PI);
       this.ctx.fill();
-
-      if (isHighlighted) {
-        this.ctx.shadowBlur = 0;
-      }
 
       // Add subtle twinkle effect for brighter stars
       if (star.magnitude < 3 && this.twinkleOffset) {
@@ -582,6 +598,11 @@ class SkyEngine {
         this.ctx.globalAlpha = 1;
       }
     });
+
+    // Reset canvas state after drawing
+    this.ctx.shadowBlur = 0;
+    this.ctx.shadowColor = 'transparent';
+    this.ctx.globalAlpha = 1;
   }
 
   drawConstellations() {
@@ -594,6 +615,9 @@ class SkyEngine {
 
   drawConstellationLines(stars, constellationName) {
     if (stars.length < 2) return;
+
+    // Save canvas state
+    this.ctx.save();
 
     // Special colors for highlighted constellations
     let strokeColor = 'rgba(100, 181, 246, 0.6)';
@@ -610,6 +634,8 @@ class SkyEngine {
     this.ctx.strokeStyle = strokeColor;
     this.ctx.lineWidth = lineWidth;
     this.ctx.globalAlpha = 0.7;
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
 
     // Draw lines between consecutive stars
     for (let i = 0; i < stars.length - 1; i++) {
@@ -627,7 +653,8 @@ class SkyEngine {
       }
     }
 
-    this.ctx.globalAlpha = 1;
+    // Restore canvas state
+    this.ctx.restore();
   }
 
   drawMoon() {
@@ -638,9 +665,12 @@ class SkyEngine {
 
     const moonSize = Math.max(8, 15 * this.viewSettings.zoom);
 
+    // Save canvas state
+    this.ctx.save();
+
     // Moon glow
     this.ctx.shadowColor = '#f5f5f5';
-    this.ctx.shadowBlur = moonSize;
+    this.ctx.shadowBlur = moonSize * 0.8;
 
     // Draw moon disc
     this.ctx.fillStyle = '#f5f5f5';
@@ -669,7 +699,8 @@ class SkyEngine {
       }
     }
 
-    this.ctx.shadowBlur = 0;
+    // Restore canvas state
+    this.ctx.restore();
   }
 
   drawCompass() {
