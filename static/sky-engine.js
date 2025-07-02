@@ -39,6 +39,11 @@ class SkyEngine {
     this.twinkleOffset = 0;
     this.isAnimating = false;
 
+    // Constellation highlighting
+    this.highlightedConstellation = null;
+    this.constellationPulse = 0;
+    this.isPulsing = false;
+
     // Smooth transitions
     this.targetView = {
       centerRA: this.viewSettings.centerRA,
@@ -619,21 +624,50 @@ class SkyEngine {
     // Save canvas state
     this.ctx.save();
 
+    // Check if this constellation is highlighted
+    const isHighlighted =
+      this.highlightedConstellation &&
+      (constellationName.toLowerCase().includes(this.highlightedConstellation.toLowerCase()) ||
+        (this.highlightedConstellation === 'leo' && constellationName.toLowerCase().includes('leone')));
+
     // Special colors for highlighted constellations
     let strokeColor = 'rgba(100, 181, 246, 0.6)';
     let lineWidth = 1;
+    let glowIntensity = 0;
 
     if (constellationName.toLowerCase().includes('leo') || constellationName.toLowerCase().includes('leone')) {
       strokeColor = '#ffd700';
       lineWidth = 2;
+      if (isHighlighted && this.isPulsing) {
+        // Pulsing effect for highlighted Leo
+        const pulse = Math.sin(this.constellationPulse) * 0.5 + 0.5;
+        glowIntensity = 10 + pulse * 15;
+        lineWidth = 2 + pulse * 2;
+        this.ctx.shadowColor = '#ffd700';
+        this.ctx.shadowBlur = glowIntensity;
+      }
     } else if (constellationName.toLowerCase().includes('sagitt')) {
       strokeColor = '#ff6b6b';
       lineWidth = 2;
+      if (isHighlighted && this.isPulsing) {
+        // Pulsing effect for highlighted Sagittarius
+        const pulse = Math.sin(this.constellationPulse) * 0.5 + 0.5;
+        glowIntensity = 10 + pulse * 15;
+        lineWidth = 2 + pulse * 2;
+        this.ctx.shadowColor = '#ff6b6b';
+        this.ctx.shadowBlur = glowIntensity;
+      }
+    }
+
+    // Enhanced visibility for highlighted constellation
+    if (isHighlighted) {
+      this.ctx.globalAlpha = 0.9;
+    } else {
+      this.ctx.globalAlpha = 0.7;
     }
 
     this.ctx.strokeStyle = strokeColor;
     this.ctx.lineWidth = lineWidth;
-    this.ctx.globalAlpha = 0.7;
     this.ctx.lineCap = 'round';
     this.ctx.lineJoin = 'round';
 
@@ -748,6 +782,12 @@ class SkyEngine {
       if (!this.isAnimating) return;
 
       this.twinkleOffset += 0.02;
+
+      // Update constellation pulse
+      if (this.isPulsing) {
+        this.constellationPulse += 0.08;
+      }
+
       this.render();
       this.animationFrame = requestAnimationFrame(animate);
     };
@@ -759,5 +799,17 @@ class SkyEngine {
     if (this.animationFrame) {
       cancelAnimationFrame(this.animationFrame);
     }
+  }
+
+  startConstellationPulse(constellationName) {
+    this.highlightedConstellation = constellationName;
+    this.isPulsing = true;
+    this.constellationPulse = 0;
+  }
+
+  stopConstellationPulse() {
+    this.isPulsing = false;
+    this.highlightedConstellation = null;
+    this.constellationPulse = 0;
   }
 }

@@ -1000,6 +1000,74 @@ body::before {
     line-height: 1.3;
 }
 
+/* Constellation Highlight Toast */
+.constellation-highlight-toast {
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 107, 107, 0.1));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 2px solid rgba(255, 215, 0, 0.4);
+    border-radius: 20px;
+    padding: 24px;
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    max-width: 90vw;
+    box-shadow: 
+        0 25px 50px rgba(255, 215, 0, 0.2), 
+        0 0 0 1px rgba(255, 255, 255, 0.1),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.constellation-highlight-toast.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.constellation-highlight-toast .toast-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.constellation-highlight-toast .toast-icon {
+    font-size: 32px;
+    flex-shrink: 0;
+    animation: pulseIcon 2s infinite;
+}
+
+.constellation-highlight-toast .toast-message {
+    color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.3;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.constellation-highlight-toast .toast-message strong {
+    display: block;
+    font-size: 20px;
+    margin-bottom: 4px;
+    background: linear-gradient(45deg, #ffd700, #ffed4e);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.constellation-highlight-toast .toast-message small {
+    opacity: 0.8;
+    font-size: 14px;
+    font-weight: 400;
+}
+
+@keyframes pulseIcon {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
 /* Progress bar for loading */
 .progress-bar {
     width: 100%;

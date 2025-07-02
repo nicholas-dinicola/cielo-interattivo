@@ -508,14 +508,16 @@ class SkyInteractiveApp {
         this.skyEngine.targetView.centerRA = 165;
         this.skyEngine.targetView.centerDec = 15;
         this.skyEngine.targetView.zoom = 1.8;
-        this.showSearchSuccess('Leone trovato! Cerca le stelle dorate che formano la testa del leone.');
+        this.showSearchSuccess('Leone trovato! Osserva le stelle dorate che formano la testa del leone.');
+        this.highlightConstellation('leo');
         break;
       case 'sagittarius':
         // Center on Sagittarius constellation
         this.skyEngine.targetView.centerRA = 280;
         this.skyEngine.targetView.centerDec = -25;
         this.skyEngine.targetView.zoom = 1.6;
-        this.showSearchSuccess('Sagittario trovato! Cerca le stelle rosse che formano la "teiera".');
+        this.showSearchSuccess('Sagittario trovato! Osserva le stelle rosse che formano la "teiera".');
+        this.highlightConstellation('sagittarius');
         break;
       case 'moon':
         if (this.skyData?.moon) {
@@ -533,11 +535,6 @@ class SkyInteractiveApp {
         this.showSearchSuccess('Vista panoramica delle stelle più brillanti del cielo.');
         break;
     }
-
-    // Flash target constellation
-    setTimeout(() => {
-      this.flashConstellations();
-    }, 1000);
   }
 
   showSearchSuccess(message) {
@@ -564,6 +561,88 @@ class SkyInteractiveApp {
         }
       }, 300);
     }, 4000);
+  }
+
+  highlightConstellation(constellationName) {
+    // Store original constellation state
+    const wasConstellationHidden = !this.skyEngine.viewSettings.showConstellations;
+
+    // Enable constellation lines
+    this.skyEngine.viewSettings.showConstellations = true;
+
+    // Update the toggle button to reflect active state
+    const toggleBtn = document.getElementById('toggleConstellations');
+    toggleBtn.classList.add('active');
+
+    // Set the target constellation for special highlighting
+    this.skyEngine.highlightedConstellation = constellationName;
+
+    // Trigger haptic feedback
+    this.triggerHaptic('success');
+
+    // Wait for view to settle, then start highlighting sequence
+    setTimeout(() => {
+      // Start pulsing effect for highlighted constellation
+      this.skyEngine.startConstellationPulse(constellationName);
+
+      // Show success message with constellation visible
+      this.showConstellationHighlightToast(constellationName);
+
+      // Auto-hide after 8 seconds if constellations were originally hidden
+      if (wasConstellationHidden) {
+        setTimeout(() => {
+          // Stop highlighting
+          this.skyEngine.highlightedConstellation = null;
+          this.skyEngine.stopConstellationPulse();
+
+          // Hide constellations again
+          setTimeout(() => {
+            this.skyEngine.viewSettings.showConstellations = false;
+            toggleBtn.classList.remove('active');
+          }, 1000);
+        }, 8000);
+      } else {
+        // Just stop highlighting after 5 seconds if constellations stay visible
+        setTimeout(() => {
+          this.skyEngine.highlightedConstellation = null;
+          this.skyEngine.stopConstellationPulse();
+        }, 5000);
+      }
+    }, 1500); // Wait for smooth view transition
+  }
+
+  showConstellationHighlightToast(constellationName) {
+    const constellationNames = {
+      leo: 'Leone',
+      sagittarius: 'Sagittario',
+    };
+
+    const toast = document.createElement('div');
+    toast.className = 'constellation-highlight-toast';
+    toast.innerHTML = `
+      <div class="toast-content">
+        <span class="toast-icon">${constellationName === 'leo' ? '🦁' : '🏹'}</span>
+        <span class="toast-message">
+          <strong>${constellationNames[constellationName]} evidenziato!</strong><br>
+          <small>Le linee scompariranno automaticamente</small>
+        </span>
+      </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Show toast
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    // Auto hide
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => {
+        if (toast.parentNode) {
+          document.body.removeChild(toast);
+        }
+      }, 300);
+    }, 3000);
   }
 
   flashConstellations() {
